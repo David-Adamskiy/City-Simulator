@@ -1,0 +1,239 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>City Builder Simulator</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #17212b;
+  color: white;
+  text-align: center;
+}
+
+header {
+  background: #243747;
+  padding: 20px;
+}
+
+.stats {
+  display: flex;
+  justify-content: center;
+  gap: 25px;
+  flex-wrap: wrap;
+  padding: 15px;
+  background: #30485c;
+}
+
+button {
+  padding: 12px 18px;
+  margin: 5px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.building {
+  background: #405d75;
+  color: white;
+}
+
+.building:hover {
+  background: #557d9e;
+}
+
+#city {
+  display: grid;
+  grid-template-columns: repeat(8, 55px);
+  gap: 5px;
+  justify-content: center;
+  margin: 20px auto;
+}
+
+.tile {
+  width: 55px;
+  height: 55px;
+  background: #548b55;
+  border-radius: 7px;
+  font-size: 25px;
+}
+
+.tile:hover {
+  background: #79ad70;
+}
+
+footer {
+  color: #b9c6d1;
+  padding: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>🏙️ City Builder Simulator</h1>
+  <p>Построй собственный мегаполис!</p>
+</header>
+
+<div class="stats">
+  <div>💰 Деньги: <span id="money">500</span> €</div>
+  <div>👥 Население: <span id="population">0</span></div>
+  <div>😊 Счастье: <span id="happiness">100</span>%</div>
+</div>
+
+<h2>Строительство</h2>
+
+<button class="building" onclick="selectBuilding('house')">
+🏠 Дом (100 €)
+</button>
+
+<button class="building" onclick="selectBuilding('shop')">
+🏪 Магазин (150 €)
+</button>
+
+<button class="building" onclick="selectBuilding('park')">
+🌳 Парк (80 €)
+</button>
+
+<p id="message">Выбери здание для строительства</p>
+
+<h2>Твой город</h2>
+<div id="city"></div>
+
+<button onclick="saveGame()">💾 Сохранить город</button>
+<button onclick="resetGame()">🔄 Новая игра</button>
+
+<footer>City Builder Simulator © 2026</footer>
+
+<script>
+let money = 500;
+let population = 0;
+let happiness = 100;
+let selected = null;
+
+const buildings = {
+  house: { emoji: "🏠", cost: 100 },
+  shop: { emoji: "🏪", cost: 150 },
+  park: { emoji: "🌳", cost: 80 }
+};
+
+let city = Array(64).fill(null);
+
+function update() {
+  document.getElementById("money").textContent = money;
+  document.getElementById("population").textContent = population;
+  document.getElementById("happiness").textContent = happiness;
+}
+
+function selectBuilding(type) {
+  selected = type;
+  document.getElementById("message").textContent =
+    "Выбрано здание! Нажми на свободную клетку.";
+}
+
+function drawCity() {
+  const board = document.getElementById("city");
+  board.innerHTML = "";
+
+  city.forEach((building, index) => {
+    const tile = document.createElement("button");
+    tile.className = "tile";
+    tile.textContent = building
+      ? buildings[building].emoji
+      : "";
+
+    tile.onclick = () => build(index);
+    board.appendChild(tile);
+  });
+}
+
+function build(index) {
+  if (!selected) {
+    document.getElementById("message").textContent =
+      "Сначала выбери здание!";
+    return;
+  }
+
+  if (city[index] !== null) {
+    document.getElementById("message").textContent =
+      "Это место уже занято!";
+    return;
+  }
+
+  const building = buildings[selected];
+
+  if (money < building.cost) {
+    document.getElementById("message").textContent =
+      "Недостаточно денег!";
+    return;
+  }
+
+  money -= building.cost;
+  city[index] = selected;
+
+  if (selected === "house") population += 5;
+  if (selected === "park") happiness = Math.min(100, happiness + 5);
+
+  document.getElementById("message").textContent =
+    "Здание успешно построено!";
+
+  update();
+  drawCity();
+}
+
+function saveGame() {
+  const data = { money, population, happiness, city };
+
+  localStorage.setItem("myCity", JSON.stringify(data));
+
+  document.getElementById("message").textContent =
+    "Город сохранён!";
+}
+
+function loadGame() {
+  const saved = localStorage.getItem("myCity");
+
+  if (saved) {
+    const data = JSON.parse(saved);
+    money = data.money;
+    population = data.population;
+    happiness = data.happiness;
+    city = data.city;
+  }
+
+  update();
+  drawCity();
+}
+
+function resetGame() {
+  if (!confirm("Начать новую игру? Старый город будет удалён.")) return;
+
+  money = 500;
+  population = 0;
+  happiness = 100;
+  city = Array(64).fill(null);
+
+  localStorage.removeItem("myCity");
+
+  update();
+  drawCity();
+}
+
+setInterval(() => {
+  const houses = city.filter(b => b === "house").length;
+  const shops = city.filter(b => b === "shop").length;
+
+  money += houses * 5 + shops * 12;
+  update();
+}, 5000);
+
+loadGame();
+</script>
+
+</body>
+</html>
